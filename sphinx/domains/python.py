@@ -1289,6 +1289,12 @@ class PythonDomain(Domain):
             matches.append((newname, self.objects[newname]))
         return matches
 
+    def process_field_xref(self, pnode: pending_xref) -> None:
+        """Process a pending xref created in a doc field.
+        Attach information about the current module and class context.
+        """
+        pnode.attributes.update(self.env.ref_context)
+
     def resolve_xref(self, env: BuildEnvironment, fromdocname: str, builder: Builder,
                      type: str, target: str, node: pending_xref, contnode: Element
                      ) -> Element:
