@@ -865,3 +865,41 @@ def test_warn_missing_reference(app, status, warning):
     assert 'index.rst:6: WARNING: undefined label: no-label' in warning.getvalue()
     assert ('index.rst:6: WARNING: Failed to create a cross reference. A title or caption not found: existing-label'
             in warning.getvalue())
+
+
+def test_process_field_xref_sets_context():
+    """
+    Test that process_field_xref correctly sets the module and class context.
+    This tests the fix for issue #8551.
+    """
+    from sphinx.domains.python import PythonDomain
+    from sphinx.addnodes import pending_xref
+    from docutils import nodes
+    
+    # Mock environment
+    class MockEnv:
+        def __init__(self):
+            self.ref_context = {'py:module': 'test_module', 'py:class': 'TestClass'}
+            self.domaindata = {}
+    
+    env = MockEnv()
+    
+    # Create a domain with minimal setup
+    domain = PythonDomain.__new__(PythonDomain)
+    domain.env = env
+    domain.data = {}
+    
+    # Create a pending_xref node
+    pnode = pending_xref('', nodes.Text('SomeClass'),
+                        refdomain='py', reftype='class', reftarget='SomeClass')
+    
+    # Initially, no context should be set
+    assert pnode.get('py:module') is None
+    assert pnode.get('py:class') is None
+    
+    # Call process_field_xref
+    domain.process_field_xref(pnode)
+    
+    # Now the context should be set from env.ref_context
+    assert pnode.get('py:module') == 'test_module'
+    assert pnode.get('py:class') == 'TestClass'
